@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atividade Prática em Grupo — Gerenciamento de Banco de Dados (MySQL)</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --warning-bg: #fef3c7;
+      --warning-border: #f59e0b;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      --font-size: 18px;
+    }
+
+    body.dark-mode {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary-light: #0369a1;
+      --success-bg: #14532d;
+      --danger-bg: #7f1d1d;
+      --warning-bg: #78350f;
+    }
+
+    body.presentation-mode {
+      --font-size: 22px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: var(--font-size);
+      line-height: 1.6;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Top Controls */
+    .top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .top-controls button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .top-controls button:hover {
+      background: var(--primary-hover);
+    }
+
+    .status-badges {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .xp-badge {
+      font-weight: bold;
+      background: #f59e0b;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+    }
+
+    .time-badge {
+      font-weight: bold;
+      background: var(--primary);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: var(--primary);
+    }
+
+    header p {
+      color: var(--text-muted);
+    }
+
+    /* Tabs Bar */
+    .nav-tabs-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding-top: 10px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-bottom: none;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      border-color: var(--primary) var(--primary) var(--card-bg) var(--primary);
+      border-width: 2px;
+      margin-bottom: -2px;
+      padding-bottom: 12px;
+    }
+
+    .badge-time {
+      background: #8b5cf6;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-top: none;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Cards & Boxes */
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gloss-box {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 14px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 0.95em;
+    }
+
+    .warning-box {
+      background: var(--warning-bg);
+      border: 2px solid var(--warning-border);
+      padding: 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.95em;
+    }
+
+    /* Code Block with Copy */
+    .code-wrapper {
+      position: relative;
+      margin: 12px 0;
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #f8fafc;
+      padding: 14px;
+      border-radius: 6px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.88em;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary);
+    }
+
+    /* Interactive Checklist */
+    .checklist-box {
+      background: var(--bg);
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      padding: 18px;
+      margin-top: 20px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px dashed var(--border);
+      cursor: pointer;
+    }
+
+    .check-item:last-child { border-bottom: none; }
+
+    .check-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 3px;
+      accent-color: var(--success);
+      cursor: pointer;
+    }
+
+    .check-item.done span {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    /* Quiz Component */
+    .quiz-q {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quiz-opt {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 6px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95em;
+      color: var(--text);
+      transition: all 0.2s;
+    }
+
+    .quiz-opt:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .quiz-opt.wrong {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .quiz-opt.correct {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .feedback-box {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      display: none;
+    }
+
+    .feedback-box.show-wrong {
+      display: block;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .feedback-box.show-correct {
+      display: block;
+      background: var(--success-bg);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 0.92em;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    details {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Top Controls -->
+  <div class="top-controls">
+    <div>
+      <button id="btn-toggle-dark" onclick="toggleDarkMode()">🌙 Modo Escuro</button>
+      <button id="btn-toggle-mode" onclick="togglePresentationMode()" style="margin-left: 8px;">🎤 Modo Projeção</button>
+    </div>
+    <div class="status-badges">
+      <span class="time-badge">⏱️ Duração: 2h00</span>
+      <span class="xp-badge" id="xp-display">⭐ Progresso da Equipe: 0 / 150 XP</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>Gerenciamento de Banco de Dados — Laboratório Prático em Grupo</h1>
+    <p>Missão: Arquitetura de Segurança, Privilégios, Roles e Governança de Recursos no MySQL 8.0+</p>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs-wrapper">
+    <div class="nav-tabs" role="tablist" id="tab-buttons-container"></div>
+  </div>
+
+  <!-- Tab Panels Container -->
+  <div id="tab-panels-container"></div>
+</div>
+
+<script>
+const ATIVIDADE_ALUNOS = [
+  {
+    id: "briefing",
+    titulo: "0. Cenário & Setup",
+    tempo: "20 min",
+    conteudo: `
+      <div class="card">
+        <div class="card-title">🏢 Contexto Corporativo: Fintech NovaPay S.A.</div>
+        <p style="margin-bottom: 12px;">
+          Vocês foram contratados como a equipe de <strong>Engenharia de Dados e Segurança (DBAs)</strong> da fintech brasileira <strong>NovaPay</strong>. 
+          Após uma auditoria externa identificar que a aplicação principal conectava ao banco usando o usuário <code>root</code> e que analistas possuíam acesso irrestrito aos dados sensíveis (CPF e saldo), a diretoria determinou um <strong>Hardening imediato</strong> no servidor MySQL.
+        </p>
+        <div class="gloss-box">
+          <strong>👥 Regras da Atividade em Grupo (Equipes de 3 a 4 alunos):</strong><br>
+          • <strong>Papel 1 (Arquiteto DDL):</strong> Responsável por estruturar o script SQL limpo e comentado.<br>
+          • <strong>Papel 2 (Executor MySQL):</strong> Roda os comandos no ambiente MySQL e valida as saídas.<br>
+          • <strong>Papel 3 (Auditor / Testador):</strong> Realiza logins com os usuários criados para comprovar bloqueios e permissões.<br>
+          • <strong>Entregável Final:</strong> Um único arquivo <code>script_seguranca_novapay.sql</code> + prints/evidências dos testes de auditoria.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🛠️ Passo 0: Script Base de Infraestrutura (Execute Primeiro)</div>
+        <p style="margin-bottom: 10px;">Conecte-se como <code>root</code> no seu MySQL e execute o script abaixo para criar o banco de dados <code>novapay_db</code> e suas tabelas iniciais:</p>
+        <div class="code-wrapper">
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copiar SQL</button>
+          <pre class="code-block">DROP DATABASE IF EXISTS novapay_db;
+CREATE DATABASE novapay_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE novapay_db;
+
+CREATE TABLE clientes (
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    cpf VARCHAR(14) NOT NULL UNIQUE,
+    telefone VARCHAR(20),
+    saldo DECIMAL(12,2) DEFAULT 0.00
+);
+
+CREATE TABLE transacoes (
+    id_transacao INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT NOT NULL,
+    valor DECIMAL(12,2) NOT NULL,
+    tipo ENUM('PIX', 'TED', 'BOLETO') NOT NULL,
+    data_hora DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+);
+
+CREATE TABLE logs_auditoria (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    evento VARCHAR(255) NOT NULL,
+    registrado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO clientes (nome, cpf, telefone, saldo) VALUES
+('Mariana Costa', '111.222.333-44', '(11) 98888-1111', 15400.50),
+('Carlos Eduardo', '555.666.777-88', '(19) 97777-2222', 320.00);
+
+INSERT INTO transacoes (id_cliente, valor, tipo) VALUES (1, 500.00, 'PIX');
+INSERT INTO logs_auditoria (evento) VALUES ('Inicialização do sistema NovaPay');</pre>
+        </div>
+      </div>
+
+      <div class="checklist-box">
+        <div class="card-title">✅ Checklist da Etapa 0 (+20 XP)</div>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Grupo formado e papéis distribuídos entre os integrantes.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Banco <code>novapay_db</code> e as 3 tabelas criadas e populadas com sucesso no MySQL.</span>
+        </label>
+      </div>
+    `
+  },
+  {
+    id: "etapa1",
+    titulo: "1. Anatomia & DDL",
+    tempo: "25 min",
+    conteudo: `
+      <div class="card">
+        <div class="card-title">🔐 Etapa 1: Criação de Contas e Ciclo de Vida DDL</div>
+        <p style="margin-bottom: 12px;">
+          Crie as contas abaixo respeitando rigorosamente o princípio de restrição de <strong>Host</strong> e políticas de ciclo de vida:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário</th>
+              <th>Host Permitido</th>
+              <th>Senha Inicial</th>
+              <th>Política / Regra de Negócio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>app_backend</code></td>
+              <td><code>localhost</code></td>
+              <td><code>App@Nova2026!</code></td>
+              <td>A aplicação roda na mesma máquina do banco. Não deve aceitar conexões externas.</td>
+            </tr>
+            <tr>
+              <td><code>dev_lucas</code></td>
+              <td><code>192.168.10.%</code></td>
+              <td><code>DevTemp#123</code></td>
+              <td>Sub-rede da engenharia. Deve ser <strong>forçado a trocar a senha</strong> no próximo login.</td>
+            </tr>
+            <tr>
+              <td><code>auditor_ext</code></td>
+              <td><code>%</code></td>
+              <td><code>Audit@2026!</code></td>
+              <td>Auditor externo. A conta deve ser criada já <strong>BLOQUEADA</strong> (<code>ACCOUNT LOCK</code>) até o início da auditoria.</td>
+            </tr>
+            <tr>
+              <td><code>estagiario_suporte</code></td>
+              <td><code>localhost</code></td>
+              <td><code>Sup@2026!</code></td>
+              <td>Conta de suporte interno nível 1.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="warning-box">
+          <strong>⚠️ Desafio de Validação:</strong> Após criar o usuário <code>auditor_ext</code> bloqueado, abra um segundo terminal (ou nova aba de conexão no Workbench/DBeaver) e tente conectar com ele. Registre o código de erro retornado pelo MySQL! Em seguida, desbloqueie a conta usando <code>ALTER USER</code>.
+        </div>
+
+        <details>
+          <summary>💡 Precisa de uma dica de sintaxe DDL?</summary>
+          <p style="margin-top: 8px; font-size: 0.9em;">
+            Lembre-se das cláusulas do <code>CREATE USER</code> e <code>ALTER USER</code>:<br>
+            • <code>CREATE USER 'usuario'@'host' IDENTIFIED BY 'senha';</code><br>
+            • <code>ALTER USER 'usuario'@'host' PASSWORD EXPIRE;</code><br>
+            • <code>ALTER USER 'usuario'@'host' ACCOUNT LOCK;</code> (ou <code>UNLOCK</code>)
+          </p>
+        </details>
+      </div>
+
+      <div class="checklist-box">
+        <div class="card-title">✅ Checklist da Etapa 1 (+30 XP)</div>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>As 4 contas foram criadas com seus respectivos hosts (<code>localhost</code>, <code>192.168.10.%</code> e <code>%</code>).</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span><code>dev_lucas</code> configurado com <code>PASSWORD EXPIRE</code>.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Testado o erro de login do <code>auditor_ext</code> bloqueado e posteriormente desbloqueado.</span>
+        </label>
+      </div>
+    `
+  },
+  {
+    id: "etapa2",
+    titulo: "2. Matriz de Escopos",
+    tempo: "30 min",
+    conteudo: `
+      <div class="card">
+        <div class="card-title">🎯 Etapa 2: Princípio do Menor Privilégio (GRANT & REVOKE)</div>
+        <p style="margin-bottom: 12px;">
+          Aplique permissões granulares para cada conta criada na Etapa 1. <strong>É estritamente proibido conceder <code>ALL PRIVILEGES</code> ou <code>*.*</code>!</strong>
+        </p>
+
+        <ol style="margin-left: 22px; display: flex; flex-direction: column; gap: 12px;">
+          <li>
+            <strong>Aplicação Backend (<code>'app_backend'@'localhost'</code>):</strong><br>
+            Precisa ler, inserir e atualizar registros nas tabelas <code>clientes</code> e <code>transacoes</code>. Na tabela <code>logs_auditoria</code>, pode apenas <strong>INSERIR</strong> e <strong>LER</strong> (nunca atualizar ou deletar logs para garantir imutabilidade). Não pode executar comandos estruturais (<code>DROP</code>, <code>ALTER</code>, <code>CREATE</code>).
+          </li>
+          <li>
+            <strong>Suporte Nível 1 (<code>'estagiario_suporte'@'localhost'</code>):</strong><br>
+            Segurança em <strong>nível de coluna</strong> (LGPD)! Na tabela <code>novapay_db.clientes</code>, ele pode ler (<code>SELECT</code>) apenas as colunas <code>id_cliente</code>, <code>nome</code> e <code>telefone</code> (não pode ver <code>cpf</code> nem <code>saldo</code>). Além disso, pode atualizar (<code>UPDATE</code>) exclusivamente a coluna <code>telefone</code>.
+          </li>
+          <li>
+            <strong>Auditor Externo (<code>'auditor_ext'@'%'</code>):</strong><br>
+            Acesso estritamente de leitura (<code>SELECT</code>) em todo o banco <code>novapay_db.*</code>. <strong>Não</strong> deve receber <code>WITH GRANT OPTION</code>.
+          </li>
+          <li>
+            <strong>Simulação de Incidente (<code>REVOKE</code>):</strong><br>
+            Suponha que um desenvolvedor concedeu acidentalmente <code>DELETE</code> na tabela <code>transacoes</code> para <code>'app_backend'@'localhost'</code>. Conceda esse privilégio e, na linha seguinte do script, execute o comando cirúrgico para revogá-lo sem afetar os demais privilégios.
+          </li>
+        </ol>
+
+        <div class="warning-box" style="margin-top: 16px;">
+          <strong>🧪 Teste Obrigatório de LGPD:</strong> Conecte-se como <code>estagiario_suporte</code> e tente executar:<br>
+          <code>SELECT * FROM novapay_db.clientes;</code> (Deve falhar!)<br>
+          <code>SELECT id_cliente, nome, telefone FROM novapay_db.clientes;</code> (Deve funcionar!)
+        </div>
+      </div>
+
+      <div class="checklist-box">
+        <div class="card-title">✅ Checklist da Etapa 2 (+40 XP)</div>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 15)">
+          <span>Privilégios operacionais aplicados ao <code>app_backend</code> mantendo a imutabilidade de <code>logs_auditoria</code>.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 15)">
+          <span>Permissão em nível de coluna testada com sucesso para o <code>estagiario_suporte</code> (bloqueio de CPF/saldo).</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Privilégio de <code>DELETE</code> revogado cirurgicamente com <code>REVOKE</code>.</span>
+        </label>
+      </div>
+    `
+  },
+  {
+    id: "etapa3",
+    titulo: "3. Roles & Limites",
+    tempo: "25 min",
+    conteudo: `
+      <div class="card">
+        <div class="card-title">👑 Etapa 3: Governança com Roles (MySQL 8.0+) e Contenção de Recursos</div>
+        <p style="margin-bottom: 12px;">
+          A NovaPay contratou dois novos cientistas de dados (<code>bi_ana</code> e <code>bi_bruno</code>) e precisa padronizar o acesso via <strong>Roles</strong>, além de proteger o servidor contra scripts em loop infinito.
+        </p>
+
+        <ol style="margin-left: 22px; display: flex; flex-direction: column; gap: 12px;">
+          <li>
+            <strong>Criação e Configuração de Role:</strong><br>
+            Crie uma Role chamada <code>'role_analista_bi'</code>. Conceda a ela permissão de <code>SELECT</code> na tabela <code>novapay_db.transacoes</code> e apenas nas colunas <code>id_cliente, nome</code> da tabela <code>novapay_db.clientes</code>.
+          </li>
+          <li>
+            <strong>Atribuição e Ativação Padrão:</strong><br>
+            Crie os usuários <code>'bi_ana'@'%'</code> e <code>'bi_bruno'@'%'</code> (senha <code>Bi@Nova2026!</code>). Atribua a role <code>'role_analista_bi'</code> a ambos e configure para que a Role seja <strong>ativada automaticamente no login</strong> (<code>SET DEFAULT ROLE</code>).
+          </li>
+          <li>
+            <strong>Proteção Contra Negação de Serviço (Resource Limits):</strong><br>
+            Configure a conta <code>'bi_ana'@'%'</code> para que ela possa abrir no máximo <strong>2 conexões simultâneas</strong> (<code>MAX_USER_CONNECTIONS</code>) e executar no máximo <strong>100 consultas por hora</strong> (<code>MAX_QUERIES_PER_HOUR</code>).
+          </li>
+        </ol>
+
+        <div class="warning-box" style="margin-top: 16px;">
+          <strong>🧪 Teste de Estresse de Conexão:</strong> Abra 3 abas de conexão simultâneas usando o usuário <code>bi_ana</code>. A 3ª conexão deve ser bloqueada com o erro <code>ERROR 1226: User 'bi_ana' has exceeded the 'max_user_connections' resource</code>.
+        </div>
+      </div>
+
+      <div class="checklist-box">
+        <div class="card-title">✅ Checklist da Etapa 3 (+30 XP)</div>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Role <code>role_analista_bi</code> criada e associada a <code>bi_ana</code> e <code>bi_bruno</code>.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span><code>SET DEFAULT ROLE ALL</code> aplicado para ativação imediata no login.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 10)">
+          <span>Limite de 2 conexões simultâneas testado e comprovado na 3ª tentativa de conexão.</span>
+        </label>
+      </div>
+    `
+  },
+  {
+    id: "etapa4",
+    titulo: "4. Auditoria & Entrega",
+    tempo: "20 min",
+    conteudo: `
+      <div class="card">
+        <div class="card-title">🔍 Etapa 4: Auditoria Final e Pergunta Técnica</div>
+        <p style="margin-bottom: 12px;">
+          Antes de entregar o script final ao professor, realize a inspeção oficial das permissões aplicadas:
+        </p>
+        <ol style="margin-left: 22px; display: flex; flex-direction: column; gap: 10px;">
+          <li>Execute <code>SHOW GRANTS FOR 'estagiario_suporte'@'localhost';</code> e <code>SHOW GRANTS FOR 'bi_ana'@'%' USING 'role_analista_bi';</code> para auditar o resultado final.</li>
+          <li>Adicione um comentário no final do seu arquivo <code>.sql</code> respondendo: <em>"Por que NÃO colocamos o comando <code>FLUSH PRIVILEGES;</code> ao final deste script?"</em></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <div class="card-title">❓ Quiz de Validação da Equipe (Antes de Chamar o Professor)</div>
+        <div class="quiz-q" id="q-0-0">
+          <p><strong>1.</strong> Ao executar <code>GRANT SELECT ON novapay_db.* TO 'auditor_ext'@'%';</code>, por que o comando <code>FLUSH PRIVILEGES</code> é considerado redundante?</p>
+          <div class="quiz-options">
+            <button class="quiz-opt" data-correct="true" data-fb="Correto! Comandos DDL nativos (GRANT, REVOKE, CREATE/ALTER USER) atualizam simultaneamente o disco e a cache de memória RAM do MySQL." onclick="checkAnswer(this, 0, 0)">Porque comandos DDL nativos já sincronizam a memória RAM e o disco automaticamente.</button>
+            <button class="quiz-opt" data-correct="false" data-fb="Incorreto. O FLUSH PRIVILEGES existe no MySQL 8.0, mas só é obrigatório quando se faz DML (INSERT/UPDATE/DELETE) direto nas tabelas do sistema." onclick="checkAnswer(this, 0, 0)">Porque o comando FLUSH PRIVILEGES foi removido do MySQL 8.0.</button>
+          </div>
+          <div class="feedback-box" id="fb-0-0"></div>
+        </div>
+
+        <div class="quiz-q" id="q-0-1">
+          <p><strong>2.</strong> Se um aluno criar <code>'bi_ana'@'%'</code> e conceder <code>GRANT 'role_analista_bi' TO 'bi_ana'@'%';</code>, mas esquecer o <code>SET DEFAULT ROLE</code>, o que ocorre quando Ana faz login e roda um <code>SELECT</code>?</p>
+          <div class="quiz-options">
+            <button class="quiz-opt" data-correct="false" data-fb="Incorreto. No MySQL 8.0, Roles atribuídas vêm desativadas por padrão no login até que sejam ativadas na sessão ou definidas como DEFAULT." onclick="checkAnswer(this, 0, 1)">Ela consegue ler a tabela normalmente desde o primeiro segundo.</button>
+            <button class="quiz-opt" data-correct="true" data-fb="Exato! Sem SET DEFAULT ROLE (ou SET ROLE na sessão), a role permanece inativa e o MySQL retorna Access Denied." onclick="checkAnswer(this, 0, 1)">Ela recebe erro de Access Denied, pois a Role inicia desativada na sessão.</button>
+          </div>
+          <div class="feedback-box" id="fb-0-1"></div>
+        </div>
+      </div>
+
+      <div class="checklist-box">
+        <div class="card-title">🏁 Entrega Final (+30 XP)</div>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 15)">
+          <span>Saídas do <code>SHOW GRANTS</code> conferidas pela equipe.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" onchange="toggleCheck(this, 15)">
+          <span>Arquivo <code>script_seguranca_novapay.sql</code> enviado/apresentado ao professor.</span>
+        </label>
+      </div>
+    `
+  }
+];
+
+let currentXP = 0;
+let isDarkMode = false;
+let isPresentationMode = false;
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTabs();
+  renderPanels();
+});
+
+function renderTabs() {
+  const container = document.getElementById("tab-buttons-container");
+  ATIVIDADE_ALUNOS.forEach((aba, index) => {
+    const btn = document.createElement("button");
+    btn.className = `tab-btn ${index === 0 ? "active" : ""}`;
+    btn.id = `tab-btn-${index}`;
+    btn.onclick = () => activateTab(index);
+    btn.innerHTML = `${aba.titulo} <span class="badge-time">⏱️ ${aba.tempo}</span>`;
+    container.appendChild(btn);
+  });
+}
+
+function renderPanels() {
+  const container = document.getElementById("tab-panels-container");
+  ATIVIDADE_ALUNOS.forEach((aba, index) => {
+    const panel = document.createElement("div");
+    panel.className = `tab-panel ${index === 0 ? "active" : ""}`;
+    panel.id = `panel-${index}`;
+    panel.innerHTML = aba.conteudo;
+    container.appendChild(panel);
+  });
+}
+
+function activateTab(index) {
+  document.querySelectorAll(".tab-btn").forEach((t, i) => t.classList.toggle("active", i === index));
+  document.querySelectorAll(".tab-panel").forEach((p, i) => p.classList.toggle("active", i === index));
+}
+
+function toggleCheck(checkbox, xp) {
+  const label = checkbox.closest(".check-item");
+  if (checkbox.checked) {
+    label.classList.add("done");
+    updateXP(xp);
+  } else {
+    label.classList.remove("done");
+    updateXP(-xp);
+  }
+}
+
+function updateXP(amount) {
+  currentXP = Math.max(0, currentXP + amount);
+  document.getElementById("xp-display").innerText = `⭐ Progresso da Equipe: ${currentXP} / 150 XP`;
+}
+
+function copyCode(btn) {
+  const code = btn.nextElementSibling.innerText;
+  navigator.clipboard.writeText(code);
+  const orig = btn.innerText;
+  btn.innerText = "✅ Copiado!";
+  setTimeout(() => btn.innerText = orig, 2000);
+}
+
+function checkAnswer(btn, tabIdx, qIdx) {
+  const isCorrect = btn.getAttribute("data-correct") === "true";
+  const fbText = btn.getAttribute("data-fb");
+  const fbBox = document.getElementById(`fb-${tabIdx}-${qIdx}`);
+  const parent = document.getElementById(`q-${tabIdx}-${qIdx}`);
+
+  if (isCorrect) {
+    btn.classList.add("correct");
+    fbBox.className = "feedback-box show-correct";
+    fbBox.innerHTML = `✅ ${fbText}`;
+    parent.querySelectorAll(".quiz-opt").forEach(o => o.disabled = true);
+  } else {
+    btn.classList.add("wrong");
+    btn.disabled = true;
+    fbBox.className = "feedback-box show-wrong";
+    fbBox.innerHTML = `❌ ${fbText}`;
+  }
+}
+
+function toggleDarkMode() {
+  isDarkMode = !isDarkMode;
+  document.body.classList.toggle("dark-mode", isDarkMode);
+  document.getElementById("btn-toggle-dark").innerText = isDarkMode ? "☀️ Modo Claro" : "🌙 Modo Escuro";
+}
+
+function togglePresentationMode() {
+  isPresentationMode = !isPresentationMode;
+  document.body.classList.toggle("presentation-mode", isPresentationMode);
+  document.getElementById("btn-toggle-mode").innerText = isPresentationMode ? "📖 Modo Leitura" : "🎤 Modo Projeção";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTMLearning v2.17 — Gerenciamento de Banco de Dados: Controle de Acesso no MySQL</title>
+  <!-- HTMLearning v2.17 — Campos não informados: aula, unidade, páginas. Nenhum conteúdo pedagógico foi inventado. -->
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --border: #cbd5e1;
+      --success: #16a34a;
+      --success-bg: #dcfce7;
+      --danger: #dc2626;
+      --danger-bg: #fee2e2;
+      --warning-bg: #fef3c7;
+      --warning-border: #f59e0b;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      --font-size: 18px;
+    }
+
+    body.dark-mode {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --primary-light: #0369a1;
+      --success-bg: #14532d;
+      --danger-bg: #7f1d1d;
+      --warning-bg: #78350f;
+    }
+
+    body.presentation-mode {
+      --font-size: 22px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-size: var(--font-size);
+      line-height: 1.6;
+      background-color: var(--bg);
+      color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Fixed Bar Controls */
+    .top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .top-controls button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .top-controls button:hover {
+      background: var(--primary-hover);
+    }
+
+    .xp-badge {
+      font-weight: bold;
+      background: #f59e0b;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+
+    /* Header */
+    header {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    header h1 {
+      font-size: 1.8em;
+      color: var(--primary);
+    }
+
+    header p {
+      color: var(--text-muted);
+    }
+
+    /* Tabs Bar (Folder Look) */
+    .nav-tabs-wrapper {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg);
+      padding-top: 10px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .tab-btn {
+      padding: 10px 18px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-bottom: none;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: var(--primary-light);
+    }
+
+    .tab-btn.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      border-color: var(--primary) var(--primary) var(--card-bg) var(--primary);
+      border-width: 2px;
+      margin-bottom: -2px;
+      padding-bottom: 12px;
+    }
+
+    .badge-study {
+      background: #8b5cf6;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Tab Panels */
+    .tab-panel {
+      display: none;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-top: none;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Card Components */
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 12px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .gloss-box {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 0.95em;
+    }
+
+    .presenter-script {
+      display: none;
+      background: #ecfdf5;
+      border: 2px dashed #10b981;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 0.9em;
+      color: #065f46;
+    }
+
+    body.presentation-mode .presenter-script {
+      display: block;
+    }
+
+    /* Interactive Demo Sandbox */
+    .demo-sandbox {
+      background: var(--bg);
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      padding: 18px;
+      margin: 20px 0;
+    }
+
+    .instructions-box {
+      background: var(--warning-bg);
+      border: 2px solid var(--warning-border);
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 0.95em;
+    }
+
+    .demo-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .demo-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .demo-btn:hover { background: var(--primary-hover); }
+    .demo-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .demo-output {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 6px;
+      min-height: 60px;
+      font-family: monospace;
+      font-size: 0.9em;
+    }
+
+    /* Quiz Component */
+    .quiz-container {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+
+    .quiz-q {
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .quiz-q:last-child { border-bottom: none; }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quiz-opt {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 6px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 0.95em;
+      transition: all 0.2s;
+    }
+
+    .quiz-opt:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .quiz-opt.wrong {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .quiz-opt.correct {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .feedback-box {
+      margin-top: 8px;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      display: none;
+    }
+
+    .feedback-box.show-wrong {
+      display: block;
+      background: var(--danger-bg);
+      border: 1px solid var(--danger);
+      color: var(--danger);
+    }
+
+    .feedback-box.show-correct {
+      display: block;
+      background: var(--success-bg);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    /* Details / Summary */
+    details {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    summary {
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--primary);
+    }
+
+    /* Links & Footer */
+    a { color: var(--primary); text-decoration: underline; }
+    a:hover { color: var(--primary-hover); }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      font-size: 0.85em;
+      color: var(--text-muted);
+      border-top: 2px solid var(--border);
+    }
+
+    .footer-block {
+      margin-bottom: 20px;
+    }
+
+    .footer-block h4 {
+      font-size: 1.05em;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .footer-links-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.9em;
+      overflow-x: auto;
+      margin: 8px 0;
+    }
+
+    .legend-box {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      margin-bottom: 10px;
+    }
+
+    body.dark-mode .legend-box {
+      background: #334155;
+      border-color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Top Controls -->
+  <div class="top-controls">
+    <div>
+      <button id="btn-toggle-dark" onclick="toggleDarkMode()">🌙 Modo Escuro</button>
+      <button id="btn-toggle-mode" onclick="togglePresentationMode()" style="margin-left: 8px;">🎤 Modo Apresentação</button>
+    </div>
+    <div>
+      <span class="xp-badge" id="xp-display">⭐ XP: 0</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <h1>Gerenciamento de Banco de Dados — Controle de Acesso e Privilégios no MySQL</h1>
+    <p>Classe Interativa HTMLearning • Trilha de Aprendizagem e Segurança no MySQL</p>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs-wrapper">
+    <div class="nav-tabs" role="tablist" id="tab-buttons-container"></div>
+  </div>
+
+  <!-- Tab Panels Container -->
+  <div id="tab-panels-container"></div>
+
+</div>
+
+<script>
+// DATA STRUCTURE FOR LESSON
+const AULA_DADOS = [
+  {
+    id: "m1",
+    titulo: "1. Anatomia da Conta",
+    isStudyProprio: false,
+    narrativa: "Uma conta no MySQL não é apenas um nome de usuário; ela é formada indissociavelmente pelo par usuário e endereço de origem (host). Essa combinação determina de onde o acesso é permitido.",
+    mundoReal: [
+      "No banco da Nubank (fintech brasileira de serviços financeiros), a equipe de segurança restringe o acesso de administradores apenas a IPs da rede interna (VPN privada).",
+      "Sistemas Web hospedados na AWS (plataforma de nuvem da Amazon) acessam o banco via sub-rede privada, impedindo conexões diretas vindas da internet aberta."
+    ],
+    ferramentas: [
+      "Sintaxe 'usuario'@'host' no MySQL.",
+      "Tabela do sistema mysql.user para inspeção de contas de usuários."
+    ],
+    dicionario: [
+      { termo: "Host", def: "Endereço IP (protocolo de internet) ou nome de domínio de onde a conexão do usuário se origina." },
+      { termo: "localhost", def: "Endereço embutido que representa o próprio computador local onde o servidor MySQL está rodando." },
+      { termo: "% (Curinga)", def: "Símbolo curinga que aceita conexões vindas de qualquer endereço IP remoto." }
+    ],
+    conceitos: [
+      {
+        titulo: "Identidade no MySQL: O Par 'usuario'@'host'",
+        texto: "Para o MySQL, 'rodrigo'@'localhost' e 'rodrigo'@'%' são duas contas completamente distintas, podendo ter senhas e privilégios totalmente diferentes.",
+        analogia: "💡 Pense como um crachá de empresa: um crachá vermelho dá acesso apenas à sede (localhost), enquanto o crachá verde dá acesso a qualquer filial (%).",
+        exemploReal: "Um script de rotina de banco de dados rodando dentro do servidor da TOTVS (empresa brasileira de software) usa 'app'@'localhost', enquanto analistas remotos conectam via 'analista'@'10.0.0.%'."
+      },
+      {
+        titulo: "Restrição de Escopo de Host",
+        texto: "Restringir o host impede que um hacker que descubra a senha consiga se conectar de fora da rede autorizada.",
+        analogia: "💡 É como uma chave de carro com chip de proximidade: a chave só liga o motor se estiver física e geograficamente dentro do veículo.",
+        exemploReal: "Servidores da Petrobras exigem que conexões de banco de dados venham estritamente de faixas de IP da rede corporativa interna (ex: 192.168.1.%)."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: O que acontece se o usuário 'ana'@'localhost' tentar conectar a partir do IP remoto 192.168.1.50?",
+      passos: [
+        { acao: "Selecione o usuário 'ana'@'localhost' e origem IP 192.168.1.50", ve: "O MySQL rejeita a conexão.", significa: "A conta requer estritamente conexões locais." },
+        { acao: "Mude a origem para 'localhost' e tente conectar", ve: "Acesso Concedido!", significa: "O host de origem casa perfeitamente com a regra da conta." }
+      ]
+    },
+    demo: { tipo: "host_sim" },
+    quiz: [
+      {
+        pergunta: "Por que 'dev'@'localhost' e 'dev'@'%' são tratadas como contas diferentes no MySQL?",
+        opts: [
+          "Porque o MySQL trata a string do host como parte da chave primária de identificação da conta.",
+          "Porque contas com '%' não podem ter senhas criptografadas.",
+          "Porque 'localhost' é um comando de exclusão de usuário."
+        ],
+        correta: 0,
+        fbs: [
+          "Exato! O par 'usuario'@'host' define a identidade única no MySQL.",
+          "Incorreto. Contas com '%' suportam exatamente os mesmos mecanismos de senha.",
+          "Incorreto. 'localhost' é o hostname local, não um comando DDL."
+        ]
+      },
+      {
+        pergunta: "Em um banco de produção do Itaú Unibanco, qual a configuração de host mais segura para a aplicação Web corporativa?",
+        opts: [
+          "Usar 'app'@'%' para facilitar a conexão de qualquer lugar do mundo.",
+          "Restringir a 'app'@'10.200.1.0/24' (sub-rede interna do servidor Web).",
+          "Usar 'root'@'%' sem senha."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. O símbolo '%' expõe o banco a tentativas de acesso de qualquer IP na internet.",
+          "Correto! Restringir à faixa de IP da aplicação impede conexões externas não autorizadas.",
+          "Incorreto. Essa é a configuração mais insegura possível em gerenciamento de banco."
+        ]
+      },
+      {
+        pergunta: "Onde o MySQL armazena internamente os registros de usuários e hosts?",
+        opts: [
+          "No arquivo de log de erros do sistema operacional.",
+          "Na tabela do sistema mysql.user.",
+          "Em um arquivo de texto simples na pasta Temp."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Logs de erro registram falhas, não credenciais ativas.",
+          "Correto! A tabela mysql.user guarda as contas, hashes de senha e privilégios globais.",
+          "Incorreto. O MySQL armazena metadados de contas em suas próprias tabelas de sistema."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+anatomia+de+conta+usuario+host" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=controle+de+acesso+mysql+seguranca" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+usuario+e+host+aula+diferenca" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "Criar um usuário 'admin'@'%' permite que ele acesse o banco tanto localmente quanto remotamente.",
+      verdade: "Depende. Se existir a conta 'admin'@'localhost', o MySQL priorizará a regra mais específica ('localhost') ao conectar localmente.",
+      explicacao: "O MySQL ordena a verificação de contas da regra mais específica para a mais genérica."
+    }
+  },
+  {
+    id: "m2",
+    titulo: "2. Ciclo de Vida DDL",
+    isStudyProprio: false,
+    narrativa: "Gerenciar contas exige comandos DDL (Linguagem de Definição de Dados). Abrange criar usuários com senha, alterar credenciais, impor expiração, bloquear contas e excluí-las com segurança.",
+    mundoReal: [
+      "Empresas de e-commerce como o Mercado Livre bloqueiam temporariamente (ACCOUNT LOCK) contas de prestadores de serviço durante finais de semana.",
+      "A regulamentação LGPD (Lei Geral de Proteção de Dados no Brasil) exige expiração periódica de senhas para todos os operadores de banco de dados."
+    ],
+    ferramentas: [
+      "CREATE USER, ALTER USER, DROP USER.",
+      "Cláusulas PASSWORD EXPIRE e ACCOUNT LOCK / UNLOCK."
+    ],
+    dicionario: [
+      { termo: "DDL", def: "Data Definition Language — Comandos SQL que alteram a estrutura do banco e seus objetos (ex: usuários, tabelas)." },
+      { termo: "ACCOUNT LOCK", def: "Recurso de segurança que impede o login do usuário sem apagar seus privilégios." },
+      { termo: "PASSWORD EXPIRE", def: "Força o usuário a alterar a senha no próximo acesso." }
+    ],
+    conceitos: [
+      {
+        titulo: "Criação e Gestão Criptografada",
+        texto: "O comando CREATE USER define a conta e o hash de senha através de IDENTIFIED BY.",
+        analogia: "💡 É como emitir um novo passaporte em um guichê do departamento de polícia: cria-se o registro e vincula-se um segredo.",
+        exemploReal: "Na Magalu (Magazine Luiza), a conta de um novo desenvolvedor é criada com senha temporária que expira no primeiro login."
+      },
+      {
+        titulo: "Bloqueio Temporário de Acesso",
+        texto: "ALTER USER ... ACCOUNT LOCK suspende a conta imediatamente, sendo ideal para desligamentos temporários ou investigações.",
+        analogia: "💡 É como suspender o crachá de um funcionário que tirou férias: ele continua cadastrado, mas a catraca não abre.",
+        exemploReal: "Durante auditorias de segurança no Banco do Brasil, contas inativas por mais de 30 dias entram automaticamente em ACCOUNT LOCK."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: O que acontece ao tentar fazer login com uma conta que sofreu 'ACCOUNT LOCK'?",
+      passos: [
+        { acao: "Execute CREATE USER 'analista'@'%' IDENTIFIED BY 'Senha123'", ve: "Conta criada com sucesso.", significa: "A conta existe no dicionário do MySQL." },
+        { acao: "Execute ALTER USER 'analista'@'%' ACCOUNT LOCK", ve: "Status atualizado para: LOCKED", significa: "Logins com esta conta serão rejeitados imediatamente." },
+        { acao: "Simule tentativa de login do analista", ve: "Erro: Account is locked.", significa: "O MySQL impede o acesso mantendo as permissões intactas." }
+      ]
+    },
+    demo: { tipo: "ddl_sim" },
+    quiz: [
+      {
+        pergunta: "Qual a diferença prática entre DROP USER e ALTER USER ... ACCOUNT LOCK?",
+        opts: [
+          "DROP USER remove permanentemente a conta; ACCOUNT LOCK apenas bloqueia o acesso temporariamente.",
+          "ACCOUNT LOCK apaga as tabelas do usuário, enquanto DROP USER apenas muda a senha.",
+          "Ambos executam exatamente a mesma ação no servidor MySQL."
+        ],
+        correta: 0,
+        fbs: [
+          "Correto! DROP USER apaga o registro e privilégios; LOCK preserva a estrutura e bloqueia o login.",
+          "Incorreto. ACCOUNT LOCK não apaga tabelas nem altera senhas.",
+          "Incorreto. São comandos com finalidades e impactos completamente distintos."
+        ]
+      },
+      {
+        pergunta: "Como forçar um usuário a trocar de senha no próximo acesso ao banco?",
+        opts: [
+          "Usando o comando DROP USER 'user'@'host' PASSWORD RESET.",
+          "Usando o comando ALTER USER 'user'@'host' PASSWORD EXPIRE.",
+          "Deletando a tabela mysql.user do servidor."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Não existe essa sintaxe em DROP USER.",
+          "Exato! PASSWORD EXPIRE marca a senha como expirada no primeiro login.",
+          "Incorreto. Deletar a tabela do sistema destrói todo o servidor de banco de dados."
+        ]
+      },
+      {
+        pergunta: "Em termos de linguagem SQL, o comando CREATE USER pertence a qual categoria?",
+        opts: [
+          "DML (Linguagem de Manipulação de Dados).",
+          "DDL (Linguagem de Definição de Dados).",
+          "DCL (Linguagem de Controle de Transação)."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. DML cuida de dados nas tabelas (SELECT, INSERT, UPDATE).",
+          "Correto! DDL define e altera a estrutura de objetos e usuários no MySQL.",
+          "Incorreto. DCL / Controle de transação lida com COMMIT/ROLLBACK."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+create+user+alter+user+account+lock" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=politica+de+senhas+banco+de+dados" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+ciclo+de+vida+do+usuario+ddl" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "Ao dar DROP USER em um usuário, suas permissões continuam salvas caso a conta seja recriada.",
+      verdade: "Mito.",
+      explicacao: "O DROP USER remove todos os privilégios associados àquela conta no dicionário de dados."
+    }
+  },
+  {
+    id: "m3",
+    titulo: "3. Matriz de Escopos",
+    isStudyProprio: false,
+    narrativa: "Privilégios no MySQL são concedidos em diferentes níveis de granularidade: Global (*.*), Banco de Dados (banco.*), Tabela (banco.tabela), Colunas ou Rotinas. O princípio do menor privilégio exige aplicar a menor abrangência possível.",
+    mundoReal: [
+      "No sistema de saúde do Albert Einstein (hospital brasileiro), enfermeiros possuem privilégio de coluna SELECT apenas nos prontuários públicos, sem acesso à coluna com histórico financeiro do paciente.",
+      "Empresas de pagamento como o PagBank limitam o acesso de desenvolvedores ao nível de banco de dados de homologação, bloqueando a matriz global."
+    ],
+    ferramentas: [
+      "Sintaxe ON escopo do comando GRANT.",
+      "Escopos: *.*, banco.*, banco.tabela, PRIV (coluna), EXECUTE ON PROCEDURE."
+    ],
+    dicionario: [
+      { termo: "Global (*.*)", def: "Permissão total que afeta todos os bancos de dados do servidor MySQL." },
+      { termo: "Granularidade", def: "Nível de detalhamento em que uma permissão é concedida (do servidor todo até uma única coluna)." },
+      { termo: "Procedure", def: "Procedimento armazenado no banco que executa uma sequência de comandos." }
+    ],
+    conceitos: [
+      {
+        titulo: "Matriz de Níveis de Privilégio",
+        texto: "Quanto menor o escopo da permissão, menor o risco de vazamento de dados ou alteração indevida.",
+        analogia: "💡 Pense nos níveis de chave de um hotel: chave-mestra (*.*), chave do andar (banco.*), chave do quarto (banco.tabela) e chave do cofre (nível de coluna).",
+        exemploReal: "Na operadora Vivo (Telefônica Brasil), atendentes de telemarketing têm permissão SELECT apenas na coluna 'telefone', sem ver a coluna 'cpf' completa."
+      },
+      {
+        titulo: "Nível de Coluna e Segurança Granular",
+        texto: "Conceder privilégios em colunas específicas (ex: UPDATE(telefone)) impede que o usuário altere colunas sensíveis como o saldo ou CPF.",
+        analogia: "💡 É como dar uma caneta que só consegue preencher o campo de observações em um formulário impresso.",
+        exemploReal: "Sistemas de RH da Serasa Experian permitem que estagiários atualizem o endereço, mas proíbem alterações na coluna 'salario'."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: Se concedermos privilégio em 'vendas.clientes', o usuário conseguirá ler a tabela 'vendas.pedidos'?",
+      passos: [
+        { acao: "Conceda privilégio SELECT em 'vendas.clientes'", ve: "Escopo atribuído: Tabela específica", significa: "O usuário acessa apenas a tabela de clientes." },
+        { acao: "Tente ler a tabela 'vendas.pedidos'", ve: "Acesso Negado!", significa: "O MySQL bloqueia o acesso por ausência de permissão na tabela pedidos." }
+      ]
+    },
+    demo: { tipo: "escopos_sim" },
+    quiz: [
+      {
+        pergunta: "Qual é o escopo atribuído pelo comando GRANT SELECT ON loja.* TO 'usr'@'%'?",
+        opts: [
+          "Nível Global (*.*).",
+          "Nível de Banco de Dados (todas as tabelas do schema 'loja').",
+          "Nível de Coluna única."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Nível global usaria *.*.",
+          "Exato! 'loja.*' concede acesso a qualquer tabela dentro do banco 'loja'.",
+          "Incorreto. Nível de coluna exige especificar os nomes das colunas."
+        ]
+      },
+      {
+        pergunta: "Para restringir um usuário para que ele execute APENAS um procedimento armazenado (Procedure) no MySQL, qual escopo deve ser usado?",
+        opts: [
+          "GRANT ALL PRIVILEGES ON *.*",
+          "GRANT EXECUTE ON PROCEDURE banco.nome_procedure",
+          "GRANT DROP ON banco.*"
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Isso concede acesso total a todo o servidor.",
+          "Correto! O privilégio EXECUTE no escopo de procedimento restringe o acesso estritamente à execução daquela rotina.",
+          "Incorreto. DROP permite apagar o banco inteiro."
+        ]
+      },
+      {
+        pergunta: "O que diz o 'Princípio do Menor Privilégio' em bancos de dados?",
+        opts: [
+          "Deve-se conceder sempre ALL PRIVILEGES para evitar erros em produção.",
+          "Cada usuário deve receber apenas as permissões estritamente necessárias para realizar sua função.",
+          "Apenas o usuário root pode executar comandos SELECT."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Conceder ALL PRIVILEGES a todos viola totalmente a segurança.",
+          "Exato! O menor privilégio reduz a superfície de ataque e o impacto de erros humanos.",
+          "Incorreto. Qualquer usuário autorizado pode ter permissão de SELECT."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+escopos+grant+tabela+coluna+global" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=principio+do+menor+privilegio+banco+de+dados" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+privilegio+em+nivel+de+coluna+e+tabela" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "Se um usuário tem permissão em nível global (*.*), ele pode ser impedido de ver uma tabela específica tirando a permissão do banco.",
+      verdade: "Mito.",
+      explicacao: "Privilégios globais se sobrepõem aos escopos inferiores no MySQL."
+    }
+  },
+  {
+    id: "m4",
+    titulo: "4. GRANT e REVOKE",
+    isStudyProprio: false,
+    narrativa: "GRANT concede e REVOKE remove permissões. É crucial diferenciar privilégios operacionais (SELECT, INSERT), estruturais (CREATE, DROP) e o alto risco da cláusula WITH GRANT OPTION.",
+    mundoReal: [
+      "Na plataforma da B3 (Bolsa de Valores do Brasil), a cláusula WITH GRANT OPTION é estritamente proibida para usuários de aplicação.",
+      "Em sistemas de auditoria contábil da Deloitte, revoga-se (REVOKE) o privilégio de DELETE de todos os operadores para garantir a imutabilidade dos lançamentos."
+    ],
+    ferramentas: [
+      "Comandos GRANT e REVOKE.",
+      "Cláusulas ALL PRIVILEGES e WITH GRANT OPTION."
+    ],
+    dicionario: [
+      { termo: "GRANT", def: "Comando SQL para conceder permissões a um usuário ou role." },
+      { termo: "REVOKE", def: "Comando SQL para revogar e retirar permissões previamente concedidas." },
+      { termo: "WITH GRANT OPTION", def: "Permite que o usuário repasse suas próprias permissões para outros usuários." }
+    ],
+    conceitos: [
+      {
+        titulo: "Operacionais vs. Estruturais",
+        texto: "Privilégios operacionais (SELECT, INSERT, UPDATE, DELETE) manipulam os dados. Privilégios estruturais (CREATE, DROP, ALTER) modificam a arquitetura das tabelas.",
+        analogia: "💡 Operacional é o inquilino usando os móveis da casa; Estrutural é o inquilino derrubando paredes da casa.",
+        exemploReal: "A API da Uber em produção tem apenas privilégios operacionais (INSERT/SELECT corrida), impedindo que um bug na aplicação execute um DROP TABLE."
+      },
+      {
+        titulo: "O Perigo do WITH GRANT OPTION",
+        texto: "Conceder WITH GRANT OPTION transforma aquele usuário em um 'administrador delegado', permitindo que ele crie novos acessos sem o conhecimento do DBA.",
+        analogia: "💡 É como dar a chave da sua casa para um vizinho e também dar a ele o direito de tirar cópias da chave para terceiros.",
+        exemploReal: "Vazamentos na infraestrutura da Capital One nos EUA ocorrem frequentemente por concessão excessiva de privilégios de delegação."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: Se executarmos 'REVOKE ALL PRIVILEGES', o usuário perderá o acesso de leitura (SELECT)?",
+      passos: [
+        { acao: "Conceda ALL PRIVILEGES ao usuário", ve: "Usuário com controle total no banco.", significa: "Pode executar qualquer comando de dados e estrutura." },
+        { acao: "Execute REVOKE ALL PRIVILEGES ON banco.* FROM 'user'@'%'", ve: "Todas as permissões revogadas.", significa: "A conta perde o acesso de leitura, escrita e modificação." }
+      ]
+    },
+    demo: { tipo: "grant_revoke_sim" },
+    quiz: [
+      {
+        pergunta: "Qual é a consequência de incluir a cláusula WITH GRANT OPTION no comando GRANT?",
+        opts: [
+          "O usuário poderá repassar os seus privilégios recebidos para outros usuários.",
+          "O usuário perderá o acesso em 24 horas automaticamente.",
+          "O banco criptografará todas as tabelas do usuário."
+        ],
+        correta: 0,
+        fbs: [
+          "Correto! Essa cláusula permite a delegação de privilégios a terceiros.",
+          "Incorreto. Não há temporizador embutido na cláusula WITH GRANT OPTION.",
+          "Incorreto. A cláusula lida com controle de acesso, não criptografia de disco."
+        ]
+      },
+      {
+        pergunta: "Qual comando retira Apenas o privilégio de exclusão (DELETE) mantendo a leitura (SELECT)?",
+        opts: [
+          "DROP USER 'usr'@'%' DELETE;",
+          "REVOKE DELETE ON banco.* FROM 'usr'@'%';",
+          "DELETE PRIVILEGE FROM mysql.user;"
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. DROP USER exclui a conta inteira do banco.",
+          "Exato! REVOKE DELETE revoga cirurgicamente apenas a permissão de deletar registros.",
+          "Incorreto. Não se deve deletar diretamente registros da tabela mysql.user."
+        ]
+      },
+      {
+        pergunta: "Comandos como CREATE, DROP e ALTER se enquadram em qual tipo de privilégio?",
+        opts: [
+          "Privilégios Operacionais de Leitura.",
+          "Privilégios Estruturais de DDL.",
+          "Privilégios de Auditoria de Log."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. Leitura é operada por SELECT.",
+          "Correto! Alteram a estrutura e schema dos objetos de banco de dados.",
+          "Incorreto. Auditoria é feita por ferramentas como SHOW GRANTS ou logs."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+grant+revoke+with+grant+option" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=seguranca+grant+revoke+banco+de+dados" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+grant+e+revoke+passo+a+passo" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "O comando REVOKE apaga o usuário do banco de dados.",
+      verdade: "Mito.",
+      explicacao: "REVOKE remove permissões; quem remove a conta do usuário é o comando DROP USER."
+    }
+  },
+  {
+    id: "m5",
+    titulo: "5. Inspeção e FLUSH",
+    isStudyProprio: false,
+    narrativa: "Inspecionar permissões com SHOW GRANTS garante a auditoria do ambiente. Entender a diferença entre alterações via DDL e manipulação direta nas tabelas do sistema explica quando FLUSH PRIVILEGES é obrigatório ou redundante.",
+    mundoReal: [
+      "Auditores externos da KPMG utilizam SHOW GRANTS para verificar se nenhum desenvolvedor possui acesso direto aos bancos de produção.",
+      "Em scripts de migração legados, o uso excessivo de FLUSH PRIVILEGES muitas vezes indica falta de conhecimento sobre o funcionamento dos comandos DDL nativos."
+    ],
+    ferramentas: [
+      "SHOW GRANTS FOR 'usuario'@'host'.",
+      "FLUSH PRIVILEGES."
+    ],
+    dicionario: [
+      { termo: "SHOW GRANTS", def: "Comando de auditoria que lista todos os privilégios concedidos a uma conta." },
+      { termo: "FLUSH PRIVILEGES", def: "Recarrega as tabelas de privilégios da memória RAM a partir do disco rígido." },
+      { termo: "Redundante", def: "Ação desnecessária por já ter sido executada automaticamente pelo sistema." }
+    ],
+    conceitos: [
+      {
+        titulo: "Auditoria com SHOW GRANTS",
+        texto: "Exibe a declaração exata dos privilégios como concedidos pelo servidor MySQL.",
+        analogia: "💡 É o extrato detalhado da sua conta bancária: mostra exatamente onde você tem saldo (permissão) e onde não tem.",
+        exemploReal: "Na concessionária de energia CPFL Paulista, relatórios mensais de conformidade extraem a saída do SHOW GRANTS de todos os operadores."
+      },
+      {
+        titulo: "Quando FLUSH PRIVILEGES é Obrigatório?",
+        texto: "Comandos DDL (GRANT, REVOKE, CREATE USER) atualizam a memória RAM e o disco simultaneamente (FLUSH é redundante). O FLUSH PRIVILEGES só é OBRIGATÓRIO se você alterar as tabelas do sistema diretamente com INSERT/UPDATE na tabela mysql.user.",
+        analogia: "💡 Comandar via DDL é como apertar o botão de salvar no Word (salva na hora); alterar a tabela mysql.user diretamente é como trocar a tomada do computador sem salvar (exige reiniciar/recarregar a memória).",
+        exemploReal: "DBAs da Locaweb que recuperam senhas de root alterando diretamente arquivos de sistema usam FLUSH PRIVILEGES para aplicar o novo hash sem reiniciar o MySQL."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: Executar 'GRANT SELECT' exige executar 'FLUSH PRIVILEGES' logo em seguida?",
+      passos: [
+        { acao: "Execute GRANT SELECT ON app.* TO 'dev'@'%'", ve: "Memória RAM e Disco sincronizados automaticamente.", significa: "FLUSH PRIVILEGES é completamente redundante aqui." },
+        { acao: "Simule UPDATE manual na tabela mysql.user", ve: "Memória desatualizada (disco ≠ RAM).", significa: "Neste caso raro, FLUSH PRIVILEGES é OBRIGATÓRIO." }
+      ]
+    },
+    demo: { tipo: "flush_sim" },
+    quiz: [
+      {
+        pergunta: "Qual comando lista todas as permissões ativas de um usuário específico no MySQL?",
+        opts: [
+          "SHOW GRANTS FOR 'usuario'@'host';",
+          "SELECT * FROM all_permissions;",
+          "CHECK USER RIGHTS 'usuario';"
+        ],
+        correta: 0,
+        fbs: [
+          "Correto! SHOW GRANTS exibe as instruções SQL que recriam os privilégios da conta.",
+          "Incorreto. Essa view não existe por padrão no MySQL.",
+          "Incorreto. Sintaxe inexistente na linguagem SQL."
+        ]
+      },
+      {
+        pergunta: "Quando o comando FLUSH PRIVILEGES é REALMENTE obrigatório?",
+        opts: [
+          "Sempre após executar qualquer GRANT ou REVOKE.",
+          "Apenas quando as tabelas do sistema (ex: mysql.user) forem modificadas diretamente com comandos DML (INSERT/UPDATE/DELETE).",
+          "Antes de criar qualquer banco de dados novo."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. O GRANT/REVOKE já recarrega a memória automaticamente.",
+          "Exato! Manipulações manuais na tabela de sistema exigem forçar o recarregamento da memória RAM.",
+          "Incorreto. A criação de schemas não exige recarregar privilégios."
+        ]
+      },
+      {
+        pergunta: "Por que usar GRANT/REVOKE é preferível em vez de fazer UPDATE direto na tabela mysql.user?",
+        opts: [
+          "Porque UPDATE na mysql.user é mais rápido mas apaga as senhas.",
+          "Porque os comandos DDL garantem a integridade da memória, evitam erros de sintaxe e não exigem FLUSH.",
+          "Não há diferença, ambas as abordagens são idênticas."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. UPDATE não apaga senhas a menos que seja instruído a isso.",
+          "Correto! DDL é seguro, abstrai o modelo interno e sincroniza a memória na hora.",
+          "Incorreto. Fazer UPDATE direto pode corromper os privilégios do servidor."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+show+grants+flush+privileges+quando+usar" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=auditoria+banco+de+dados+show+grants" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+flush+privileges+explicacao" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "É boa prática colocar FLUSH PRIVILEGES ao final de todo script de GRANT.",
+      verdade: "Mito.",
+      explicacao: "É uma redundância desnecessária, pois o GRANT faz o recarregamento automático em memória."
+    }
+  },
+  {
+    id: "m6",
+    titulo: "6. Roles e Limites (MySQL 8.0+)",
+    isStudyProprio: true,
+    narrativa: "No MySQL 8.0+, Roles (papéis) agrupam permissões facilitando a gestão corporativa. Além disso, as restrições de recursos previnem ataques de negação de serviço ou gargalos por usuários abusivos.",
+    mundoReal: [
+      "Na plataforma de investimentos XP Investimentos, criam-se roles como 'desenvolvedor', 'analista_bi' e 'auditor', atribuindo usuários a esses papéis.",
+      "Bancos digitais como o C6 Bank utilizam MAX_USER_CONNECTIONS para impedir que uma aplicação com vazamento de conexões derrube o banco de produção."
+    ],
+    ferramentas: [
+      "CREATE ROLE, GRANT 'role' TO 'usuario', SET DEFAULT ROLE.",
+      "Restrições: MAX_QUERIES_PER_HOUR, MAX_CONNECTIONS_PER_HOUR, MAX_USER_CONNECTIONS."
+    ],
+    dicionario: [
+      { termo: "Role (Papel)", def: "Conjunto nomeado de privilégios que pode ser atribuído a múltiplos usuários simultaneamente." },
+      { termo: "MAX_QUERIES_PER_HOUR", def: "Limite máximo de consultas SELECT/UPDATE/etc que uma conta pode fazer por hora." },
+      { termo: "MAX_USER_CONNECTIONS", def: "Número máximo de conexões simultâneas abertas por uma única conta de usuário." }
+    ],
+    conceitos: [
+      {
+        titulo: "Agrupamento com Roles no MySQL 8.0+",
+        texto: "Em vez de conceder 10 permissões individualmente para 50 usuários, cria-se uma Role, concede-se os privilégios a ela e atribui-se a Role aos usuários.",
+        analogia: "💡 Pense em grupos do WhatsApp (aplicativo de mensagens da Meta): você adiciona a pessoa ao grupo 'Diretoria' e ela ganha todos os acessos daquele grupo.",
+        exemploReal: "No iFood, quando um novo cientista de dados é contratado, ele recebe a Role 'role_data_science' e obtém acesso instantâneo aos relatórios."
+      },
+      {
+        titulo: "Governança e Restrição de Recursos",
+        texto: "Limitar consultas por hora ou conexões simultâneas impede que scripts mal escritos causem indisponibilidade no banco de dados.",
+        analogia: "💡 É como o limite de dados móveis do seu plano de celular: ao estourar a cota por hora, o acesso fica suspenso até a renovação.",
+        exemploReal: "Portais de notícias como o G1 estabelecem MAX_USER_CONNECTIONS nos usuários de relatórios para priorizar o acesso dos leitores."
+      }
+    ],
+    roteiroDemo: {
+      passo0: "Antes de clicar/dar play, preveja: O que acontece se o usuário 'dev1' tentar abrir 6 conexões simultâneas quando seu limite MAX_USER_CONNECTIONS é 5?",
+      passos: [
+        { acao: "Atribua MAX_USER_CONNECTIONS = 5 ao usuário 'dev1'", ve: "Limite configurado no MySQL.", significa: "A conta pode abrir no máximo 5 sessões paralelas." },
+        { acao: "Simule a abertura da 6ª conexão simultânea", ve: "Erro: User 'dev1' has exceeded the 'max_user_connections' resource.", significa: "O MySQL rejeita a 6ª conexão preservando o servidor." }
+      ]
+    },
+    demo: { tipo: "roles_limits_sim" },
+    quiz: [
+      {
+        pergunta: "Qual a principal vantagem didática e operacional do uso de Roles (papéis) introduzido no MySQL 8.0?",
+        opts: [
+          "Permite gerenciar privilégios em lote por função de cargo, simplificando a concessão e a revogação.",
+          "Aumenta a velocidade de conexão em 500%.",
+          "Substitui a necessidade de ter senhas nos usuários."
+        ],
+        correta: 0,
+        fbs: [
+          "Correto! Roles facilitam a administração corporativa centralizando a gestão de permissões.",
+          "Incorreto. Roles organizam segurança, sem alterar a velocidade do motor SQL.",
+          "Incorreto. Usuários continuam necessitando de autenticação com senha."
+        ]
+      },
+      {
+        pergunta: "Para impedir que um script em loop infinito trave o servidor fazendo milhões de buscas, qual restrição de recurso deve ser aplicada?",
+        opts: [
+          "MAX_QUERIES_PER_HOUR",
+          "ACCOUNT LOCK PERMANENT",
+          "DROP DATABASE"
+        ],
+        correta: 0,
+        fbs: [
+          "Exato! MAX_QUERIES_PER_HOUR limita a cota de consultas dentro de uma hora.",
+          "Incorreto. LOCK bloqueia totalmente a conta, e não gradualmente por uso.",
+          "Incorreto. DROP apaga o banco de dados inteiro."
+        ]
+      },
+      {
+        pergunta: "Após conceder uma Role a um usuário com GRANT 'role_dev' TO 'joao'@'%', o que é necessário para torná-la ativa por padrão no login?",
+        opts: [
+          "Executar FLUSH TABLES.",
+          "Executar SET DEFAULT ROLE ALL TO 'joao'@'%' (ou ativar a role na sessão).",
+          "Reiniciar o sistema operacional do servidor."
+        ],
+        correta: 1,
+        fbs: [
+          "Incorreto. FLUSH TABLES fecha tabelas abertas.",
+          "Correto! No MySQL 8.0, as Roles atribuídas precisam ser ativadas por padrão ou via sessão.",
+          "Incorreto. Não requer reinicialização do servidor de forma alguma."
+        ]
+      }
+    ],
+    aprofundar: [
+      { titulo: "🔎 Busca no Google (português)", url: "https://www.google.com/search?hl=pt-BR&q=mysql+8+roles+papeis+max+user+connections" },
+      { titulo: "🎓 Pesquisa científica (Google Scholar, português)", url: "https://scholar.google.com/scholar?hl=pt-BR&q=controle+de+acesso+baseado+em+papéis+rbac+banco+de+dados" },
+      { titulo: "🎬 Vídeos-aula no YouTube (busca em português)", url: "https://www.youtube.com/results?search_query=mysql+8+roles+e+limites+de+recursos" }
+    ],
+    mitoOuVerdade: {
+      afirmacao: "Ao atribuir uma Role a um usuário, seus privilégios entram em vigor imediatamente sem necessidade de ativação no MySQL 8.0.",
+      verdade: "Mito.",
+      explicacao: "Por padrão no MySQL 8.0, é preciso definir SET DEFAULT ROLE ou ativá-la explicitamente na sessão."
+    }
+  }
+];
+
+const REVISAO_DADOS = {
+  mapa: [
+    "1. Anatomia da Conta — O par indissociável 'usuario'@'host' define quem acessa e de onde.",
+    "2. Ciclo de Vida DDL — CREATE USER, ALTER USER, ACCOUNT LOCK e DROP USER administram a existência da conta.",
+    "3. Matriz de Escopos — Granularidade de acesso: Global (*.*), Banco (banco.*), Tabela (banco.tabela), Coluna e Rotinas.",
+    "4. GRANT e REVOKE — Permissões operacionais vs estruturais e os riscos da cláusula WITH GRANT OPTION.",
+    "5. Inspeção e FLUSH — Auditoria com SHOW GRANTS e a verdade sobre quando FLUSH PRIVILEGES é obrigatório.",
+    "6. Roles e Limites (📖 Estudo próprio) — Agrupamento de acesso no MySQL 8.0+ e contenção de recursos."
+  ],
+  cola: [
+    { termo: "Par usuario@host", linha: "Identidade do MySQL. 'usr'@'localhost' (acesso local) difere de 'usr'@'%' (acesso de qualquer IP)." },
+    { termo: "ACCOUNT LOCK", linha: "Bloqueio temporário (trava o login da conta sem apagar seus privilégios no banco)." },
+    { termo: "PASSWORD EXPIRE", linha: "Exige a troca imediata da senha no próximo login efetuado pelo usuário." },
+    { termo: "Princípio do Menor Privilégio", linha: "Dar apenas os acessos estritamente necessários para a função do operador." },
+    { termo: "WITH GRANT OPTION", linha: "Cláusula de risco que dá ao usuário o direito de repassar seus privilégios a terceiros." },
+    { termo: "SHOW GRANTS", linha: "Comando de auditoria que exibe todas as permissões ativas de uma conta." },
+    { termo: "FLUSH PRIVILEGES", linha: "Recarrega permissões da RAM. Só obrigatório ao alterar tabelas do sistema diretamente via DML." },
+    { termo: "Role", linha: "Grupo de privilégios nomeado (disponível no MySQL 8.0+) facilitando atribuições em lote." }
+  ],
+  desafio: "Desafio do Chefão: A empresa PagBank precisa criar um usuário de relatórios para o analista 'carlos'. O acesso deve ser permitido APENAS vindo da rede interna (IPs 192.168.5.%). Ele deve ter acesso de leitura APENAS nas tabelas do banco 'financeiro'. A conta não pode ter permissão de repassar acessos a ninguém e deve ter um limite de no máximo 10 conexões simultâneas para não sobrecarregar o servidor. Escreva mentalmente a sequência de comandos (CREATE USER, GRANT, limites) e verifique se usaria FLUSH PRIVILEGES ao final."
+};
+
+// GLOBAL STATE
+let currentXP = 0;
+let isDarkMode = false;
+let isPresentationMode = false;
+
+// INITIALIZATION
+document.addEventListener("DOMContentLoaded", () => {
+  renderTabs();
+  renderPanels();
+  setupRouting();
+  setupKeyboardNav();
+});
+
+// RENDER TABS
+function renderTabs() {
+  const container = document.getElementById("tab-buttons-container");
+  container.innerHTML = "";
+
+  AULA_DADOS.forEach((aba, index) => {
+    const btn = document.createElement("button");
+    btn.className = `tab-btn ${index === 0 ? "active" : ""}`;
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("id", `tab-btn-${index}`);
+    btn.setAttribute("aria-selected", index === 0 ? "true" : "false");
+    btn.onclick = () => activateTab(index);
+
+    let label = aba.titulo;
+    if (aba.isStudyProprio) {
+      label += ` <span class="badge-study">📖 Estudo próprio</span>`;
+    }
+    btn.innerHTML = label;
+    container.appendChild(btn);
+  });
+
+  // Revision Tab Button
+  const revBtn = document.createElement("button");
+  revBtn.className = "tab-btn";
+  revBtn.setAttribute("role", "tab");
+  revBtn.setAttribute("id", `tab-btn-${AULA_DADOS.length}`);
+  revBtn.setAttribute("aria-selected", "false");
+  revBtn.onclick = () => activateTab(AULA_DADOS.length);
+  revBtn.innerHTML = "🎯 7. Revisão & Chefão";
+  container.appendChild(revBtn);
+}
+
+// RENDER PANELS
+function renderPanels() {
+  const container = document.getElementById("tab-panels-container");
+  container.innerHTML = "";
+
+  AULA_DADOS.forEach((aba, index) => {
+    const panel = document.createElement("div");
+    panel.className = `tab-panel ${index === 0 ? "active" : ""}`;
+    panel.setAttribute("id", `panel-${index}`);
+
+    let html = `
+      <div class="presenter-script">
+        <strong>🎤 Roteiro do Apresentador:</strong> Apresente o tema "${aba.titulo}". Enfatize a aplicação no mundo real e conduza a demonstração interativa pedindo aos alunos para preverem o resultado antes do clique.
+      </div>
+
+      <div class="card">
+        <div class="card-title">📖 Visão Geral & Contexto</div>
+        <p style="margin-bottom: 12px;">${aba.narrativa}</p>
+        <div class="gloss-box">
+          <strong>🔑 Glossário da Primeira Menção:</strong><br>
+          ${aba.dicionario.map(d => `• <strong>${d.termo}:</strong> ${d.def}`).join("<br>")}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌍 Casos do Mundo Real</div>
+        <ul style="margin-left: 20px;">
+          ${aba.mundoReal.map(item => `<li style="margin-bottom: 6px;">${item}</li>`).join("")}
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💡 Conceitos Chave</div>
+        ${aba.conceitos.map(c => `
+          <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+            <h4 style="color: var(--primary);">${c.titulo}</h4>
+            <p>${c.texto}</p>
+            <p style="margin-top: 4px; font-style: italic;">${c.analogia}</p>
+            <p style="margin-top: 4px; font-size: 0.9em; color: var(--text-muted);"><strong>Exemplo Prático:</strong> ${c.exemploReal}</p>
+          </div>
+        `).join("")}
+      </div>
+
+      <!-- Demo Sandbox -->
+      <div class="demo-sandbox">
+        <div class="card-title">🎮 Demonstração Interativa & Simulação</div>
+        <div class="instructions-box">
+          <strong>📋 INSTRUÇÕES PASSO A PASSO:</strong><br>
+          ${aba.roteiroDemo.passo0}<br><br>
+          <strong>Roteiro de Ação:</strong>
+          <ol style="margin-left: 20px; margin-top: 4px;">
+            ${aba.roteiroDemo.passos.map(p => `<li><strong>Ação:</strong> ${p.acao} | <strong>Significado:</strong> ${p.significa}</li>`).join("")}
+          </ol>
+        </div>
+
+        ${renderDemoControls(aba.demo.tipo, index)}
+
+        <div style="margin-top: 10px;">
+          <button class="demo-btn" style="background: #64748b;" onclick="resetDemo(${index})">🔄 Reiniciar demo</button>
+        </div>
+        <div class="demo-output" id="demo-output-${index}" style="margin-top: 10px;">
+          <em>Aguardando ação... Clique nos botões acima para iniciar a simulação.</em>
+        </div>
+      </div>
+
+      <!-- Quiz -->
+      <div class="quiz-container">
+        <div class="card-title">❓ Quiz da Aula — Teste seus Conhecimentos</div>
+        <div class="legend-box">
+          🔑 <strong>Termos deste quiz:</strong> ${aba.dicionario.map(d => `${d.termo} = ${d.def}`).join(" · ")}
+        </div>
+        ${aba.quiz.map((q, qIndex) => `
+          <div class="quiz-q" id="q-${index}-${qIndex}">
+            <p><strong>P${qIndex + 1}:</strong> ${q.pergunta}</p>
+            <div class="quiz-options">
+              ${q.opts.map((opt, optIndex) => `
+                <button class="quiz-opt" 
+                        data-correct="${optIndex === q.correta}" 
+                        data-fb="${q.fbs[optIndex]}"
+                        onclick="checkAnswer(this, ${index}, ${qIndex})">
+                  ${opt}
+                </button>
+              `).join("")}
+            </div>
+            <div class="feedback-box" id="fb-${index}-${qIndex}"></div>
+          </div>
+        `).join("")}
+      </div>
+
+      <!-- Deepening Links -->
+      <div class="card" style="margin-top: 30px;">
+        <div class="card-title">🚀 Aprofundamento (Buscas Guiadas)</div>
+        <ul style="margin-left: 20px;">
+          ${aba.aprofundar.map(link => `
+            <li style="margin-bottom: 6px;">
+              <a href="${link.url}" target="_blank" rel="noopener">${link.titulo}</a>
+            </li>
+          `).join("")}
+        </ul>
+      </div>
+
+      <!-- Details Box -->
+      <details style="margin-top: 15px;">
+        <summary>🔍 Mito ou Verdade nesta Aula?</summary>
+        <div style="padding-top: 10px;">
+          <p><strong>Afirmação:</strong> "${aba.mitoOuVerdade.afirmacao}"</p>
+          <p style="margin-top: 6px; color: var(--primary);"><strong>Resposta:</strong> ${aba.mitoOuVerdade.verdade}</p>
+          <p style="margin-top: 4px; font-size: 0.9em;">${aba.mitoOuVerdade.explicacao}</p>
+        </div>
+      </details>
+    `;
+
+    panel.innerHTML = html;
+    container.appendChild(panel);
+  });
+
+  // Render Revision Panel
+  const revPanel = document.createElement("div");
+  revPanel.className = "tab-panel";
+  revPanel.setAttribute("id", `panel-${AULA_DADOS.length}`);
+
+  let revHtml = `
+    <div class="card">
+      <div class="card-title">🗺️ Mapa Completo da Aula</div>
+      <ul style="margin-left: 20px;">
+        ${REVISAO_DADOS.mapa.map(item => `<li style="margin-bottom: 8px;">${item}</li>`).join("")}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ Cola Rápida & Glossário Integrado</div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+        <thead>
+          <tr style="border-bottom: 2px solid var(--border); text-align: left;">
+            <th style="padding: 8px;">Conceito / Termo</th>
+            <th style="padding: 8px;">Resumo Direto em Linguagem Plana</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${REVISAO_DADOS.cola.map(c => `
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 8px; font-weight: bold; color: var(--primary);">${c.termo}</td>
+              <td style="padding: 8px;">${c.linha}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="background: var(--warning-bg); border-color: var(--warning-border);">
+      <div class="card-title" style="color: #78350f;">🏆 Desafio Final do Chefão</div>
+      <p style="color: #78350f;">${REVISAO_DADOS.desafio}</p>
+      <div style="margin-top: 15px;">
+        <details>
+          <summary style="color: #78350f;">💡 Ver Resolução Esperada do Chefão</summary>
+          <div class="code-block" style="margin-top: 10px;">
+CREATE USER 'carlos'@'192.168.5.%' IDENTIFIED BY 'SenhaForte123';
+GRANT SELECT ON financeiro.* TO 'carlos'@'192.168.5.%';
+ALTER USER 'carlos'@'192.168.5.%' WITH MAX_USER_CONNECTIONS 10;
+-- Nota: FLUSH PRIVILEGES é REDUNDANTE aqui, pois usou-se DDL nativo!
+          </div>
+        </details>
+      </div>
+    </div>
+  `;
+
+  revPanel.innerHTML = revHtml;
+  container.appendChild(revPanel);
+}
+
+// HELPER TO RENDER DEMO CONTROLS BASED ON TYPE
+function renderDemoControls(tipo, abaIndex) {
+  if (tipo === "host_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runHostDemo(${abaIndex}, 'ana', 'localhost')">Testar: 'ana'@'localhost' via Localhost</button>
+        <button class="demo-btn" onclick="runHostDemo(${abaIndex}, 'ana', '192.168.1.50')">Testar: 'ana'@'localhost' via IP Remoto 192.168.1.50</button>
+        <button class="demo-btn" onclick="runHostDemo(${abaIndex}, 'dev', '%')">Testar: 'dev'@'%' via IP Remoto 192.168.1.50</button>
+      </div>
+    `;
+  } else if (tipo === "ddl_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runDDLDemo(${abaIndex}, 'create')">1. Executar CREATE USER</button>
+        <button class="demo-btn" onclick="runDDLDemo(${abaIndex}, 'lock')">2. Executar ACCOUNT LOCK</button>
+        <button class="demo-btn" onclick="runDDLDemo(${abaIndex}, 'login')">3. Tentar Login</button>
+        <button class="demo-btn" onclick="runDDLDemo(${abaIndex}, 'unlock')">4. Executar ACCOUNT UNLOCK</button>
+      </div>
+    `;
+  } else if (tipo === "escopos_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runEscoposDemo(${abaIndex}, 'table')">Conceder GRANT SELECT em 'vendas.clientes'</button>
+        <button class="demo-btn" onclick="runEscoposDemo(${abaIndex}, 'read_clientes')">Ler 'vendas.clientes'</button>
+        <button class="demo-btn" onclick="runEscoposDemo(${abaIndex}, 'read_pedidos')">Ler 'vendas.pedidos'</button>
+      </div>
+    `;
+  } else if (tipo === "grant_revoke_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runGrantRevokeDemo(${abaIndex}, 'grant_all')">GRANT ALL PRIVILEGES</button>
+        <button class="demo-btn" onclick="runGrantRevokeDemo(${abaIndex}, 'revoke_all')">REVOKE ALL PRIVILEGES</button>
+        <button class="demo-btn" onclick="runGrantRevokeDemo(${abaIndex}, 'test')">Testar Acesso de Leitura</button>
+      </div>
+    `;
+  } else if (tipo === "flush_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runFlushDemo(${abaIndex}, 'ddl')">Executar GRANT via DDL</button>
+        <button class="demo-btn" onclick="runFlushDemo(${abaIndex}, 'manual')">Update direto na tabela mysql.user</button>
+        <button class="demo-btn" onclick="runFlushDemo(${abaIndex}, 'flush')">Executar FLUSH PRIVILEGES</button>
+      </div>
+    `;
+  } else if (tipo === "roles_limits_sim") {
+    return `
+      <div class="demo-controls">
+        <button class="demo-btn" onclick="runRolesDemo(${abaIndex}, 'set_limit')">Definir MAX_USER_CONNECTIONS = 5</button>
+        <button class="demo-btn" onclick="runRolesDemo(${abaIndex}, 'connect_5')">Abrir 5 conexões simultâneas</button>
+        <button class="demo-btn" onclick="runRolesDemo(${abaIndex}, 'connect_6')">Tentar abrir a 6ª conexão</button>
+      </div>
+    `;
+  }
+  return "";
+}
+
+// DEMO LOGIC IMPLEMENTATIONS
+function runHostDemo(idx, user, host) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (user === 'ana' && host === 'localhost') {
+    out.innerHTML = `<span style="color:var(--success);">✅ [CONEXÃO ACEITA] Usuário 'ana'@'localhost' conectou a partir do localhost com sucesso! (Exemplo Real: Aplicação local na infraestrutura da TOTVS).</span>`;
+  } else if (user === 'ana' && host === '192.168.1.50') {
+    out.innerHTML = `<span style="color:var(--danger);">❌ [CONEXÃO REJEITADA] Access denied for user 'ana'@'192.168.1.50'. A conta exige restritamente origem de localhost.</span>`;
+  } else if (user === 'dev' && host === '%') {
+    out.innerHTML = `<span style="color:var(--success);">✅ [CONEXÃO ACEITA] Usuário 'dev'@'%' conectou a partir de 192.168.1.50. O curinga '%' aceita qualquer IP de origem.</span>`;
+  }
+}
+
+let ddlState = { created: false, locked: false };
+function runDDLDemo(idx, action) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (action === 'create') {
+    ddlState.created = true;
+    out.innerHTML = `Query OK. Usuário 'analista'@'%' criado no sistema MySQL.`;
+  } else if (action === 'lock') {
+    if (!ddlState.created) { out.innerHTML = `⚠️ Crie a conta primeiro.`; return; }
+    ddlState.locked = true;
+    out.innerHTML = `Query OK. Status da conta atualizado para: ACCOUNT LOCK (Bloqueada).`;
+  } else if (action === 'login') {
+    if (!ddlState.created) { out.innerHTML = `⚠️ Conta não existe.`; return; }
+    if (ddlState.locked) {
+      out.innerHTML = `<span style="color:var(--danger);">❌ ERROR 3118 (HY000): Access denied for user 'analista'@'%'. Account is locked. (Exemplo Real: Bloqueio de segurança no Banco do Brasil).</span>`;
+    } else {
+      out.innerHTML = `<span style="color:var(--success);">✅ Login efetuado com sucesso!</span>`;
+    }
+  } else if (action === 'unlock') {
+    if (!ddlState.created) { out.innerHTML = `⚠️ Crie a conta primeiro.`; return; }
+    ddlState.locked = false;
+    out.innerHTML = `Query OK. Conta desbloqueada (ACCOUNT UNLOCK).`;
+  }
+}
+
+let escopoState = { clientes: false };
+function runEscoposDemo(idx, action) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (action === 'table') {
+    escopoState.clientes = true;
+    out.innerHTML = `Query OK. Concedido GRANT SELECT ON vendas.clientes TO 'user'@'%'.`;
+  } else if (action === 'read_clientes') {
+    if (escopoState.clientes) {
+      out.innerHTML = `<span style="color:var(--success);">✅ SELECT * FROM vendas.clientes executado com sucesso! (Retornou registros de clientes).</span>`;
+    } else {
+      out.innerHTML = `<span style="color:var(--danger);">❌ Access denied for table 'vendas.clientes'.</span>`;
+    }
+  } else if (action === 'read_pedidos') {
+    out.innerHTML = `<span style="color:var(--danger);">❌ ERROR 1142 (42000): SELECT command denied to user for table 'vendas.pedidos'. (O escopo concedido foi restrito à tabela clientes).</span>`;
+  }
+}
+
+let grantState = { granted: false };
+function runGrantRevokeDemo(idx, action) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (action === 'grant_all') {
+    grantState.granted = true;
+    out.innerHTML = `Query OK. ALL PRIVILEGES concedidos em banco.*`;
+  } else if (action === 'revoke_all') {
+    grantState.granted = false;
+    out.innerHTML = `Query OK. REVOKE ALL PRIVILEGES executado com sucesso.`;
+  } else if (action === 'test') {
+    if (grantState.granted) {
+      out.innerHTML = `<span style="color:var(--success);">✅ Acesso de leitura e alteração liberados com sucesso.</span>`;
+    } else {
+      out.innerHTML = `<span style="color:var(--danger);">❌ ERROR 1044 (42000): Access denied for user to database 'banco'. (Permissões revogadas - Exemplo Real: Imutabilidade de logs na Deloitte).</span>`;
+    }
+  }
+}
+
+let flushState = { ddlSynced: true, manualSynced: true };
+function runFlushDemo(idx, action) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (action === 'ddl') {
+    out.innerHTML = `Query OK. GRANT executado via DDL. Memória RAM e Disco sincronizados instantaneamente. (FLUSH PRIVILEGES é desnecessário/redundante).`;
+  } else if (action === 'manual') {
+    flushState.manualSynced = false;
+    out.innerHTML = `<span style="color:var(--warning-border);">⚠️ UPDATE mysql.user SET ... executado no disco. A memória RAM do MySQL CONTINUA COM OS DADOS ANTIGOS!</span>`;
+  } else if (action === 'flush') {
+    flushState.manualSynced = true;
+    out.innerHTML = `<span style="color:var(--success);">✅ FLUSH PRIVILEGES executado! Tabela de privilégios recarregada do disco para a memória RAM com sucesso.</span>`;
+  }
+}
+
+let limitState = { limit: 0, current: 0 };
+function runRolesDemo(idx, action) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  if (action === 'set_limit') {
+    limitState.limit = 5;
+    limitState.current = 0;
+    out.innerHTML = `Query OK. ALTER USER com MAX_USER_CONNECTIONS = 5 configurado.`;
+  } else if (action === 'connect_5') {
+    if (limitState.limit === 0) { out.innerHTML = `⚠️ Configure o limite primeiro.`; return; }
+    limitState.current = 5;
+    out.innerHTML = `<span style="color:var(--success);">✅ 5 conexões paralelas abertas simultaneamente (Dentro do limite permitido).</span>`;
+  } else if (action === 'connect_6') {
+    if (limitState.current >= 5) {
+      out.innerHTML = `<span style="color:var(--danger);">❌ ERROR 1226 (42000): User 'dev1' has exceeded the 'max_user_connections' resource (current value: 5). (Exemplo Real: Proteção de gargalo no C6 Bank).</span>`;
+    } else {
+      out.innerHTML = `⚠️ Abra as 5 conexões primeiro para atingir o limite.`;
+    }
+  }
+}
+
+function resetDemo(idx) {
+  const out = document.getElementById(`demo-output-${idx}`);
+  out.innerHTML = `<em>Demo reiniciada. Aguardando ações...</em>`;
+  ddlState = { created: false, locked: false };
+  escopoState = { clientes: false };
+  grantState = { granted: false };
+  flushState = { ddlSynced: true, manualSynced: true };
+  limitState = { limit: 0, current: 0 };
+}
+
+// QUIZ LOGIC WITH RETRY & XP
+function checkAnswer(btn, tabIdx, qIdx) {
+  const isCorrect = btn.getAttribute("data-correct") === "true";
+  const feedbackText = btn.getAttribute("data-fb");
+  const fbContainer = document.getElementById(`fb-${tabIdx}-${qIdx}`);
+  const parentQ = document.getElementById(`q-${tabIdx}-${qIdx}`);
+  const allOpts = parentQ.querySelectorAll(".quiz-opt");
+
+  if (isCorrect) {
+    btn.classList.add("correct");
+    fbContainer.className = "feedback-box show-correct";
+    fbContainer.innerHTML = `✅ <strong>Por que esta está certa:</strong> ${feedbackText}`;
+
+    // Lock all options for this question
+    allOpts.forEach(opt => opt.disabled = true);
+
+    // Award XP
+    const hasErr = parentQ.getAttribute("data-has-error") === "true";
+    addXP(hasErr ? 5 : 10);
+  } else {
+    btn.classList.add("wrong");
+    btn.disabled = true;
+    parentQ.setAttribute("data-has-error", "true");
+    fbContainer.className = "feedback-box show-wrong";
+    fbContainer.innerHTML = `❌ <strong>Por que esta está errada:</strong> ${feedbackText}`;
+  }
+}
+
+function addXP(amount) {
+  currentXP += amount;
+  document.getElementById("xp-display").innerText = `⭐ XP: ${currentXP}`;
+}
+
+// TAB ACTIVATION & ROUTING
+function activateTab(index) {
+  const tabs = document.querySelectorAll(".tab-btn");
+  const panels = document.querySelectorAll(".tab-panel");
+
+  tabs.forEach((tab, i) => {
+    if (i === index) {
+      tab.classList.add("active");
+      tab.setAttribute("aria-selected", "true");
+    } else {
+      tab.classList.remove("active");
+      tab.setAttribute("aria-selected", "false");
+    }
+  });
+
+  panels.forEach((panel, i) => {
+    if (i === index) {
+      panel.classList.add("active");
+    } else {
+      panel.classList.remove("active");
+    }
+  });
+
+  location.hash = `aba-${index + 1}`;
+}
+
+function setupRouting() {
+  window.addEventListener("hashchange", parseHash);
+  parseHash();
+}
+
+function parseHash() {
+  const hash = location.hash;
+  if (hash.startsWith("#aba-")) {
+    const num = parseInt(hash.replace("#aba-", ""), 10) - 1;
+    if (num >= 0 && num <= AULA_DADOS.length) {
+      activateTab(num);
+      return;
+    }
+  }
+  activateTab(0);
+}
+
+// KEYBOARD NAVIGATION
+function setupKeyboardNav() {
+  document.addEventListener("keydown", (e) => {
+    const activeTabObj = document.querySelector(".tab-btn.active");
+    if (!activeTabObj) return;
+
+    const allTabs = Array.from(document.querySelectorAll(".tab-btn"));
+    let currIdx = allTabs.indexOf(activeTabObj);
+
+    if (e.key === "ArrowRight") {
+      let next = (currIdx + 1) % allTabs.length;
+      activateTab(next);
+    } else if (e.key === "ArrowLeft") {
+      let prev = (currIdx - 1 + allTabs.length) % allTabs.length;
+      activateTab(prev);
+    }
+  });
+}
+
+// MODES TOGGLE
+function toggleDarkMode() {
+  isDarkMode = !isDarkMode;
+  document.body.classList.toggle("dark-mode", isDarkMode);
+  document.getElementById("btn-toggle-dark").innerText = isDarkMode ? "☀️ Modo Claro" : "🌙 Modo Escuro";
+}
+
+function togglePresentationMode() {
+  isPresentationMode = !isPresentationMode;
+  document.body.classList.toggle("presentation-mode", isPresentationMode);
+  document.getElementById("btn-toggle-mode").innerText = isPresentationMode ? "📖 Modo Leitura" : "🎤 Modo Apresentação";
+}
+</script>
+
+</body>
+</html>
